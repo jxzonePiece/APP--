@@ -1,0 +1,101 @@
+//
+//  WDF_CommontsInfoViewController.m
+//  100Movies_2.0
+//
+//  Created by qianfeng on 16/1/9.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+#import "WDF_CommontsInfoViewController.h"
+
+#import "WDF_Movie_message_ViewController.h"
+
+#import "WDF_Commont.h"
+
+#import "WDF_InfoTableViewCell.h"
+
+@interface WDF_CommontsInfoViewController ()<UITableViewDataSource,UITableViewDelegate>
+
+@property(nonatomic,strong)UITableView *tableView;
+@property(nonatomic, strong)NSArray *dataSource;
+
+@property(nonatomic, strong)UIView *vs;
+
+@end
+
+@implementation WDF_CommontsInfoViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.navigationController.navigationBar.translucent=NO;
+    self.navigationItem.title=@"影评";
+    
+    // 查看对应电影详情
+    self.navigationItem.rightBarButtonItem=[[UIBarButtonItem alloc] initWithTitle:@"影片详情" style:UIBarButtonItemStylePlain target:self action:@selector(checkMovie)];
+    
+    self.navigationItem.leftBarButtonItem=[[UIBarButtonItem alloc] initWithTitle:@"返回" style:UIBarButtonItemStylePlain target:self action:@selector(exitAction)];
+    
+    [self.navigationController.navigationBar setTintColor:[UIColor blueColor]];
+    
+    [self.view addSubview:self.tableView];
+    
+}
+- (void)viewWillAppear:(BOOL)animated{
+    self.dataSource=@[self.model];
+}
+- (void)exitAction{
+    [self.navigationController popViewControllerAnimated:YES];
+}
+- (void)checkMovie{
+    WDF_Movie_message_ViewController *detail=[[WDF_Movie_message_ViewController alloc] init];
+    [self.navigationController pushViewController:detail animated:YES];
+    
+    detail.ID=self.model.subject_id;
+}
+
+-(void)setModel:(WDF_Commont *)model{
+    _model=model;
+
+}
+#pragma mark =============协议方法=============================
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    return 1;
+}
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    WDF_InfoTableViewCell *cell=[tableView dequeueReusableCellWithIdentifier:@"cell"];
+    cell.model=self.model;
+    
+    return cell;
+}
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    WDF_InfoTableViewCell *cell=[tableView dequeueReusableCellWithIdentifier:@"cell"];
+    cell.model=self.dataSource[indexPath.row];
+    
+    return cell.maxY;
+    
+}
+#pragma mark ===============懒加载=============================
+
+- (UITableView *)tableView{
+    if (!_tableView) {
+        _tableView=[[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
+        _tableView.delegate=self;
+        _tableView.dataSource=self;
+        _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+        [_tableView registerClass:[WDF_InfoTableViewCell class] forCellReuseIdentifier:@"cell"];
+    }
+    return _tableView;
+}
+//- (NSArray *)dataSource{
+//    return _dataSource=@[self.model];
+//}
+- (NSArray *)dataSource{
+    if (!_dataSource) {
+        _dataSource=[[NSArray alloc] init];
+    }
+    return _dataSource;
+}
+
+@end

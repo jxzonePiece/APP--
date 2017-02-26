@@ -1,0 +1,25 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "e7e70b2a-48cb-4936-96b2-96fe1d19c394++8705",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "e7e70b2a-48cb-4936-96b2-96fe1d19c394++8705" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "e7e70b2a-48cb-4936-96b2-96fe1d19c394++8705" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "E998239F-B381-49B6-89A1-BE9065F2D436",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "e7e70b2a-48cb-4936-96b2-96fe1d19c394++8705" : "100Movie_2.0%E6%AD%A3%E5%BC%8F%E7%89%88\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "100Movies_2.0",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "100Movies_2.0\/100Movies_2.0.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "svn:\/\/10.17.10.23:8001",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "e7e70b2a-48cb-4936-96b2-96fe1d19c394++8705"
+    }
+  ]
+}

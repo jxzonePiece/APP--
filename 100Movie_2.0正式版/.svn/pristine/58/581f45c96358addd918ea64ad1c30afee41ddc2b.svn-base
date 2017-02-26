@@ -1,0 +1,140 @@
+//
+//  WDF_Casts_Message_ViewController.m
+//  100Movies_2.0
+//  电影主演的展示界面
+//  Created by qianfeng on 16/1/14.
+//  Copyright © 2016年 WDF. All rights reserved.
+//  王长勇
+
+#import "WDF_Casts_Message_ViewController.h"
+#import "AFNetworking.h"
+#import "WDF_Casts_Message_Model.h"
+#import "WDF_Casts_Messgae_TableViewCell.h"
+#import "WDF_Casts_HeaderView.h"
+#import "WDF_Movie_message_ViewController.h"
+#import "MBProgressHUD.h"
+
+@interface WDF_Casts_Message_ViewController ()<UITableViewDataSource,UITableViewDelegate>
+
+@property (nonatomic, strong) UITableView *tableView;
+@property (nonatomic, strong) NSMutableArray *dataSource;
+@property (nonatomic, strong) WDF_Casts_HeaderView *headerView;
+
+@end
+
+@implementation WDF_Casts_Message_ViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    [self loadData];
+    self.title = @"影人详情";
+    [self.view addSubview:self.tableView];
+    
+}
+
+- (void)viewWillAppear:(BOOL)animated{
+//    [self showHUD:@"数据正在加载" isDim:YES];
+}
+
+- (void) loadData{
+    NSString *stringUrl = [NSString stringWithFormat:CELEBRITY_PATH,self.id];
+    NSString *string = [NSString stringWithFormat:DOUBAN_BASE_PATH@"%@",stringUrl];
+    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
+    [manager GET:string parameters:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        [self creatModelAndSaveToDataSourceWith:responseObject];
+        [self hideHUD];
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        [self showHUDComplete:@"数据解析失败"];
+    }];
+    
+}
+
+- (void)creatModelAndSaveToDataSourceWith:(NSDictionary *)responseObject{
+    WDF_Casts_Message_Model *model = [[WDF_Casts_Message_Model alloc] initWithDictionary:responseObject error:nil];
+//    NSLog(@"%@",model);
+    [self.dataSource addObject:model];
+    self.headerView.model = model;
+    [self.tableView reloadData];
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    WDF_Casts_Message_Model *model = self.dataSource.firstObject;
+    WDF_Casts_Messgae_TableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
+    cell.row = indexPath.row;
+    cell.model = model;
+    return cell;
+}
+
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    
+    WDF_Casts_Message_Model *model = self.dataSource.firstObject;
+    
+    
+    return model.works.count;
+}
+
+- (CGFloat) tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    return SCREEN_WIDTH *0.3+20;
+}
+
+
+- (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    WDF_Movie_message_ViewController *movie = [[WDF_Movie_message_ViewController alloc] init];
+    WDF_Casts_Message_Model *model = self.dataSource.firstObject;
+    NSDictionary *dict = model.works[indexPath.row];
+    movie.ID = dict[@"subject"][@"id"];
+    
+    [self.navigationController pushViewController:movie animated:YES];
+}
+
+- (UITableView *)tableView{
+    if (_tableView == nil) {
+        _tableView = [[UITableView alloc]initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT-109) style:(UITableViewStylePlain)];
+        
+        [_tableView registerClass:[WDF_Casts_Messgae_TableViewCell class] forCellReuseIdentifier:@"cell"];
+        
+        _tableView.tableHeaderView = self.headerView;
+        _tableView.dataSource = self;
+        _tableView .delegate = self;
+    }
+    return _tableView;
+}
+
+- (NSMutableArray *)dataSource{
+    if (_dataSource == nil) {
+        _dataSource = [[NSMutableArray alloc]init];
+    }
+    return _dataSource;
+}
+
+- (WDF_Casts_HeaderView *)headerView{
+    if (_headerView == nil) {
+        _headerView = [[WDF_Casts_HeaderView alloc] initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, SCREEN_WIDTH*0.618)];
+//        _headerView.model = self.dataSource.firstObject;
+        
+    }
+    return _headerView;
+}
+-(void)showHUD:(NSString *)title isDim:(BOOL)isDim
+{
+    self.hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
+    self.hud.dimBackground = isDim;
+    self.hud.labelText = title;
+}
+
+-(void)showHUDComplete:(NSString *)title
+{
+    self.hud.customView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"37x-Checkmark.png"]];
+    self.hud.mode = MBProgressHUDModeCustomView;
+    self.hud.labelText = title;
+    [self hideHUD];
+}
+
+-(void)hideHUD
+{
+    [self.hud hide:YES afterDelay:0.3];
+}
+
+
+@end

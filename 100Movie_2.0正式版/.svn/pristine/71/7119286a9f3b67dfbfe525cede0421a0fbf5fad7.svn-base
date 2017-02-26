@@ -1,0 +1,183 @@
+//
+//  Baoyu_fangyingting_View.m
+//  CollectionCoverFlow
+//
+//  Created by qianfeng on 16/1/9.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+#import "Baoyu_fangyingting_View.h"
+
+#import "Baoyu_LineLayout.h"
+
+#import "Baoyu_Cell_CollectionViewCell.h"
+
+#import "WDF_Baoyu_First_Model.h"
+
+#import "UIImageView+WebCache.h"
+
+#define Curtain_width 45
+
+@interface Baoyu_fangyingting_View ()<UICollectionViewDataSource,UICollectionViewDelegate,UICollectionViewDelegateFlowLayout>
+
+/** collectview */
+@property (nonatomic,strong) UICollectionView *collection;
+
+
+
+/** 左帘子 */
+@property (nonatomic,strong) UIImageView *leftCurtain;
+
+/** 右帘子 */
+@property (nonatomic,strong) UIImageView *rightCurtain;
+
+/** 数据源 */
+@property (nonatomic, strong) NSMutableArray *dataSource;
+
+/** 帷幕 */
+@property (nonatomic, strong) UIImageView *weiMu;
+
+@end
+
+
+@implementation Baoyu_fangyingting_View
+
+- (void)setDataWith:(NSArray *)data{
+    [self.dataSource removeAllObjects];
+    
+    for (WDF_Baoyu_First_Model *model in data) {
+        [self.dataSource addObject:model];
+    }
+    
+    [self.collection reloadData];
+    
+}
+
+- (instancetype)initWithMyFrame:(CGRect)viewFrame {
+    self = [super initWithFrame:viewFrame];
+    if (self) {
+        
+        self.backgroundColor = [UIColor colorWithRed:25/255.f green:25/255.f blue:25/255.f alpha:1];
+        
+
+        
+        //添加collection
+        [self addSubview:self.collection];
+        
+        [self addSubview:self.weiMu];
+        
+        
+        //添加seatImg
+        [self addSubview:self.seatView];
+        
+        [self addSubview:self.leftCurtain];
+        [self addSubview:self.rightCurtain];
+        
+    }
+    return self;
+}
+
+#pragma mark =============== collection协议 ================
+- (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView {
+//#warning Incomplete implementation, return the number of sections
+    return 1;
+}
+
+
+- (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
+//#warning Incomplete implementation, return the number of items
+    return self.dataSource.count;
+}
+
+- (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
+    Baoyu_Cell_CollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"baoyu" forIndexPath:indexPath];
+    
+    WDF_Baoyu_First_Model *model = self.dataSource[indexPath.item];
+    
+    NSString *imgPath = model.images.large;
+    
+    [cell.imgView sd_setImageWithURL:[NSURL URLWithString:imgPath] placeholderImage:ZHANWEITU];
+    
+    
+//    cell.imgView.image = [UIImage imageNamed:[NSString stringWithFormat:@"%zd.jpg",indexPath.item]];
+    // Configure the cell
+    
+    return cell;
+}
+
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
+    
+    WDF_Baoyu_First_Model *model = self.dataSource[indexPath.item];
+    
+    if (self.goToChangYong) {
+        self.goToChangYong(model.Baoyu_Movie_ID);
+    }
+}
+
+
+- (void)openWeiMu{
+    [UIView animateWithDuration:0.6 animations:^{
+        self.weiMu.frame = CGRectMake(0, - CGRectGetHeight(self.collection.frame), self.frame.size.width, CGRectGetHeight(self.collection.frame));
+    }];
+    
+}
+
+- (void)closeWeiMu{
+    [UIView animateWithDuration:0.6 animations:^{
+        self.weiMu.frame = self.collection.frame;
+    }];
+}
+
+#pragma mark =============== 懒加载 ================
+- (UICollectionView *)collection{
+    if (!_collection) {
+        _collection = [[UICollectionView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.frame), 270) collectionViewLayout:[[Baoyu_LineLayout alloc] init]];
+        [_collection registerClass:[Baoyu_Cell_CollectionViewCell class] forCellWithReuseIdentifier:@"baoyu"];
+        _collection.delegate = self;
+        _collection.dataSource =self;
+    }
+    return _collection;
+}
+
+- (UIImageView *)weiMu{
+    if (!_weiMu) {
+        _weiMu = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, self.frame.size.width, CGRectGetHeight(self.collection.frame))];
+        _weiMu.image = [UIImage imageNamed:@"weimu.jpg"];
+        _weiMu.backgroundColor = [UIColor blueColor];
+    }
+    return _weiMu;
+}
+
+- (UIImageView *)seatView{
+    if (!_seatView) {
+        _seatView = [[UIImageView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(self.collection.frame) , CGRectGetWidth(self.frame), CGRectGetWidth(self.frame)*0.31)];
+        _seatView.image = [UIImage imageNamed:@"zuowei.jpg"];
+    }
+    return _seatView;
+}
+
+
+- (UIImageView *)leftCurtain{
+    if (!_leftCurtain) {
+        _leftCurtain = [[UIImageView alloc] initWithFrame:CGRectMake(CGRectGetMinX(self.collection.frame), CGRectGetMinY(self.collection.frame), Curtain_width, CGRectGetHeight(self.collection.frame))];
+        _leftCurtain.image = [UIImage imageNamed:@"left.jpg"];
+    }
+    return _leftCurtain;
+}
+
+- (UIImageView *)rightCurtain{
+    if (!_rightCurtain) {
+        _rightCurtain = [[UIImageView alloc] initWithFrame:CGRectMake(CGRectGetWidth(self.collection.frame) - Curtain_width, CGRectGetMinY(self.collection.frame), Curtain_width, CGRectGetHeight(self.collection.frame))];
+        _rightCurtain.image = [UIImage imageNamed:@"right.jpg"];
+    }
+    return _rightCurtain;
+}
+
+- (NSMutableArray *)dataSource{
+    if (!_dataSource) {
+        _dataSource = [NSMutableArray array];
+    }
+    return _dataSource;
+}
+
+@end

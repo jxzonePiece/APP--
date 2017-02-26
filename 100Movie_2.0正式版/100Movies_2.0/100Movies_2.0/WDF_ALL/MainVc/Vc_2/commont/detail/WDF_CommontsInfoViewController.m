@@ -1,0 +1,187 @@
+//
+//  WDF_CommontsInfoViewController.m
+//  100Movies_2.0
+//
+//  Created by qianfeng on 16/1/9.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+#import "WDF_CommontsInfoViewController.h"
+
+#import "WDF_Movie_message_ViewController.h"
+
+#import "WDF_Commont.h"
+
+#import "WDF_InfoTableViewCell.h"
+
+@interface WDF_CommontsInfoViewController ()
+
+@property(nonatomic,strong)UITableView *tableView;
+
+
+@property(nonatomic, strong)UIView *vs;
+
+@property(nonatomic,strong)UILabel *titles;
+
+@property(nonatomic,strong)UILabel *nameAndTime;
+
+@property(nonatomic, strong)UILabel *content;
+
+@property(nonatomic, strong)UILabel *useFul;
+
+
+
+@end
+
+@implementation WDF_CommontsInfoViewController
+
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.view.backgroundColor=[UIColor whiteColor];
+    
+    self.navigationController.navigationBar.translucent=NO;
+    
+    self.navigationItem.title=@"影评";
+    
+    // 查看对应电影详情
+    self.navigationItem.rightBarButtonItem=[[UIBarButtonItem alloc] initWithTitle:@"影片详情" style:UIBarButtonItemStylePlain target:self action:@selector(checkMovie)];
+    
+    self.navigationItem.leftBarButtonItem=[[UIBarButtonItem alloc] initWithTitle:@"返回" style:UIBarButtonItemStylePlain target:self action:@selector(exitAction)];
+    
+     [self.view addSubview:self.tableView];
+    
+    UIImageView *image=[[UIImageView alloc] initWithFrame:self.view.bounds];
+    image.image=[UIImage imageNamed:@"comInfo.jpg"];
+    [self.view addSubview:image];
+    image.alpha=0.4;
+    
+    [self model];
+}
+- (void)viewWillAppear:(BOOL)animated{
+    self.tableView.tableHeaderView=self.vs;
+}
+- (void)exitAction{
+    [self.navigationController popViewControllerAnimated:YES];
+}
+- (void)checkMovie{
+    WDF_Movie_message_ViewController *detail=[[WDF_Movie_message_ViewController alloc] init];
+    [self.navigationController pushViewController:detail animated:YES];
+    
+    detail.ID=self.model.subject_id;
+    
+    NSLog(@"%@",detail.ID);
+    
+}
+
+-(void)setModel:(WDF_Commont *)model{
+    _model=model;
+    
+    _model=model;
+    self.titles.text=model.title;
+    
+    NSString *message1=[NSString stringWithFormat:@"   作者:%@\n   更新时间:%@",model.author.name,model.updated_at];
+    NSMutableAttributedString *att1=[[NSMutableAttributedString alloc]initWithString:message1];
+    [att1 addAttributes:@{NSFontAttributeName:[UIFont systemFontOfSize:18],
+                          NSForegroundColorAttributeName:[UIColor orangeColor]} range:NSMakeRange(6, model.author.name.length)];
+    [att1 addAttributes:@{NSFontAttributeName:[UIFont systemFontOfSize:18],
+                          NSForegroundColorAttributeName:[UIColor orangeColor]} range:NSMakeRange(message1.length-model.updated_at.length,model.updated_at.length)];
+    
+    self.nameAndTime.attributedText=att1;
+    
+    NSMutableParagraphStyle *style=[[NSMutableParagraphStyle alloc] init];
+    [style setLineSpacing:14];
+    style.paragraphSpacing=4;
+    CGSize size=[model.content boundingRectWithSize:CGSizeMake(SCREEN_WIDTH-20, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:10],NSParagraphStyleAttributeName: style} context:nil].size;
+    
+    self.content.text=model.content;
+    
+    
+    
+    self.content.frame=CGRectMake(10, CGRectGetMaxY(self.nameAndTime.frame)+10, SCREEN_WIDTH-20, size.height);
+    
+    
+    NSString *message=[NSString stringWithFormat:@"有用数:%zd   无用数:%zd",model.useful_count,model.useless_count];
+    NSString *strUseful=[NSString stringWithFormat:@"%zd",model.useful_count];
+    NSString *strUseless=[NSString stringWithFormat:@"%zd",model.useless_count];
+    NSMutableAttributedString *att=[[NSMutableAttributedString alloc]initWithString:message];
+    [att addAttributes:@{NSFontAttributeName:[UIFont systemFontOfSize:19],
+                         NSForegroundColorAttributeName:[UIColor brownColor]
+                         } range:NSMakeRange(4,strUseful.length)];
+    [att addAttributes:@{NSFontAttributeName:[UIFont systemFontOfSize:19],
+                         NSForegroundColorAttributeName:[UIColor brownColor]
+                         } range:NSMakeRange(message.length-strUseless.length,strUseless.length)];
+    
+    self.useFul.attributedText=att;
+    
+    self.vs.frame=CGRectMake(30, 10, SCREEN_WIDTH-50, CGRectGetMaxY(self.content.frame)+60);
+    
+}
+
+#pragma mark ===============懒加载=============================
+
+- (UITableView *)tableView{
+    if (!_tableView) {
+        _tableView=[[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
+        _tableView.tableHeaderView=self.vs;
+    }
+    return _tableView;
+}
+
+- (UIView *)vs{
+    if (!_vs) {
+        _vs=[[UIView alloc] initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, 1500)];
+    }
+    return _vs;
+}
+
+
+#pragma mark========================懒加载=================
+- (UILabel *)titles{
+    if (!_titles) {
+        _titles=[[UILabel alloc] initWithFrame:CGRectMake(10,12, SCREEN_WIDTH-20, 40)];
+        _titles.text=self.model.title;
+        _titles.numberOfLines=2;
+        _titles.textAlignment=NSTextAlignmentCenter;
+        _titles.textColor=[UIColor blackColor];
+        _titles.font=[UIFont boldSystemFontOfSize:23];
+        [self.vs addSubview:_titles];
+    }
+    return _titles;
+}
+
+- (UILabel *)useFul{
+    if (!_useFul) {
+        _useFul=[[UILabel alloc] initWithFrame:CGRectMake(65, CGRectGetMaxY(self.titles.frame)+5, SCREEN_WIDTH-130, 30)];
+        _useFul.textAlignment=NSTextAlignmentRight;
+        
+        [self.vs addSubview:_useFul];
+        
+    }
+    return _useFul;
+}
+
+
+- (UILabel *)nameAndTime{
+    if (!_nameAndTime) {
+        _nameAndTime=[[UILabel alloc] initWithFrame:CGRectMake(10, CGRectGetMaxY(self.useFul.frame)+10, SCREEN_WIDTH-20, 50)];
+        _nameAndTime.numberOfLines=2;
+        [self.vs addSubview:_nameAndTime];
+    }
+    return _nameAndTime;
+}
+
+- (UILabel *)content{
+    if (!_content) {
+        _content=[[UILabel alloc] init];
+        _content.numberOfLines=0;
+        [self.vs addSubview:_content];
+    }
+    return _content;
+}
+
+
+
+@end

@@ -1,0 +1,752 @@
+//
+//  WDF_Second_ViewController.m
+//  100Movies_2.0
+//
+//  Created by qianfeng on 16/1/11.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+#import "WDF_Second_ViewController.h"
+
+#import "WDF_Baoyu_Second_Model.h"
+#import "WDF_Baoyu_Photos_Model.h"
+#import "WDF_DoubanWeb_ViewController.h"
+#import "WDF_Movie_message_ViewController.h"
+
+#import "AFHTTPSessionManager.h"
+#import "UIImageView+WebCache.h"
+#import "UIButton+WebCache.h"
+#import "UIImage+MuzipooOriginallImage.h"
+#import "WDF_BaoyuPhoto_ViewController.h"
+
+#import "WDF_Baoyu_Second_Model.h"
+
+//宏
+#define PLAYER_HEIGHT ([UIScreen mainScreen].bounds.size.height - 113)*0.65
+
+#define ROLL_HEIGHT ([UIScreen mainScreen].bounds.size.height - 113)*0.35
+
+#define BUTTON_TAG 657
+
+#define PHOTO_TAG 456
+
+@interface WDF_Second_ViewController ()<UIScrollViewDelegate>
+
+/** 最上面的放映机图片 */
+@property (nonatomic, strong) UIImageView *playerImgView;
+
+/** 下面胶卷scorller */
+@property (nonatomic, strong) UIScrollView *RollView;
+
+/** 荧幕imgView */
+@property (nonatomic, strong) UIImageView *BackImgView;
+
+/** 背景黑 */
+@property (nonatomic, strong) UILabel *blackLabel;
+
+/** 荧幕上的scorller */
+@property (nonatomic ,strong) UIScrollView *playerScroll;
+
+
+/** 荧幕上的电影照片 */
+@property (nonatomic, strong) UIImageView *movieImgView;
+
+/** 当前展示的secondModel */
+@property (nonatomic, strong) WDF_Baoyu_Second_Model *currentSecond;
+
+/** 剧照描述label */
+@property (nonatomic ,strong) UILabel *descLabel;
+
+/** 下方胶卷scrollView */
+@property (nonatomic ,strong) UIScrollView *LastScroll;
+
+/** 下方胶卷电影详情View */
+@property (nonatomic ,strong) UIView *detailView;
+
+/** 下方电影详情照片 */
+@property (nonatomic, strong) UIImageView *lastImg;
+
+/** 下方电影名称 */
+@property (nonatomic, strong) UILabel *nameLabel;
+
+/** 打分 */
+@property (nonatomic, strong) UILabel *ratingLabel;
+
+/** 豆瓣详情 */
+@property (nonatomic, strong) UIButton *douban;
+
+/** 电影详情按钮 */
+@property (nonatomic, strong) UIButton *xiangqing;
+
+@property (nonatomic, strong) NSString *requsetURL;
+
+@property (nonatomic, strong) NSMutableArray *dataSource;
+
+@property (nonatomic, strong) NSMutableArray *photots;
+
+@end
+
+@implementation WDF_Second_ViewController
+
+{
+    //控制button切换的BOOL
+    BOOL Muzi;
+    //记录上一个按钮位置的Rect
+    CGRect lastRect;
+    CGRect lastScrRect;
+    CGSize lastContentSize;
+}
+
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    Muzi = YES;
+    
+    [self.view addSubview:self.playerImgView];
+    
+    [self.view addSubview:self.LastScroll];
+    
+    [self.view bringSubviewToFront:self.LastScroll];
+    
+    [self.LastScroll addSubview:self.RollView];
+    
+    [self.LastScroll addSubview:self.detailView];
+    
+    
+    [self creatDetailView];
+    
+    [self.playerImgView addSubview:self.BackImgView];
+    
+    
+    [self.view addSubview:self.playerScroll];
+    
+//    [self.view addSubview:self.descLabel];
+    
+    [self.playerScroll addSubview:self.movieImgView];
+    
+    
+    
+    [self loadPageData];
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    
+}
+
+- (void)creatDetailView{
+    //添加向右箭头
+    UIButton *rightButton = [[UIButton alloc] initWithFrame:CGRectMake(5, (ROLL_HEIGHT - 30)/2.f, 30, 30)];
+    [rightButton setImage:[UIImage imageNamed:@"you"] forState:UIControlStateNormal];
+    [rightButton addTarget:self action:@selector(getBackRight) forControlEvents:UIControlEventTouchUpInside];
+    [self.detailView addSubview:rightButton];
+    
+    
+    //添加
+    
+    [self.detailView addSubview:self.lastImg];
+    
+    [self.detailView addSubview:self.nameLabel];
+    
+    [self.detailView addSubview:self.ratingLabel];
+    
+    [self.detailView addSubview:self.douban];
+    
+    [self.detailView addSubview:self.xiangqing];
+}
+
+- (void)getBackRight{
+    [UIView animateWithDuration:0.2 animations:^{
+        self.LastScroll.contentOffset = CGPointMake(0, 0);
+    } completion:^(BOOL finished) {
+        
+    }];
+}
+
+
+#pragma mark =============== setMoviesType ================
+- (void)setMovieType:(NSString *)movieType{
+    self.requsetURL = nil;
+    
+    if ([movieType isEqualToString:@"热门"]) {
+        self.requsetURL = HOTMOVIE_PATH;
+    }else if ([movieType isEqualToString:@"最新"]) {
+        self.requsetURL = NEWMOVIE_PATH;
+    }else if ([movieType isEqualToString:@"爱情"]) {
+        self.requsetURL = LOVE_PATH;
+    }else if ([movieType isEqualToString:@"同志"]) {
+        self.requsetURL = COMRADE_PATH;
+    }else if ([movieType isEqualToString:@"经典"]) {
+        self.requsetURL = JINGDINA_PATH;
+    }else if ([movieType isEqualToString:@"冷门佳片"]) {
+        self.requsetURL = MISS_PATH;
+    }else if ([movieType isEqualToString:@"高分"]) {
+        self.requsetURL = GAOFEN_PATH;
+    }else if ([movieType isEqualToString:@"喜剧"]) {
+        self.requsetURL = COMEDY_PATH;
+    }else if ([movieType isEqualToString:@"搞怪"]) {
+        self.requsetURL = GAOGUAI_PATH;
+    }else if ([movieType isEqualToString:@"无厘头"]) {
+        self.requsetURL = WULITOU_PATH;
+    }else if ([movieType isEqualToString:@"治愈"]) {
+        self.requsetURL = ZHIYU_PATH;
+    }else if ([movieType isEqualToString:@"青春"]) {
+        self.requsetURL = YONG_PATH;
+    }else if ([movieType isEqualToString:@"小清新"]) {
+        self.requsetURL = XIAOQINGXIN_PATH;
+    }else if ([movieType isEqualToString:@"文艺"]) {
+        self.requsetURL = WENYI_PATH;
+    }else if ([movieType isEqualToString:@"动作"]) {
+        self.requsetURL = ACTION_PATH;
+    }else if ([movieType isEqualToString:@"科幻"]) {
+        self.requsetURL = SCIENCE_PATH;
+    }else if ([movieType isEqualToString:@"悬疑"]) {
+        self.requsetURL = XUANYI_PATH;
+    }else if ([movieType isEqualToString:@"恐怖"]) {
+        self.requsetURL = KONGBU_PATH;
+    }else if ([movieType isEqualToString:@"华语"]) {
+        self.requsetURL = HUAYU_PATH;
+    }else if ([movieType isEqualToString:@"欧美"]) {
+        self.requsetURL = OUMEI_PATH;
+    }else if ([movieType isEqualToString:@"日韩"]) {
+        self.requsetURL = RIHAN_PATH;
+    }
+    
+}
+
+#pragma mark =============== 网络请求 ================
+- (void)loadPageData{
+    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
+    
+    [manager GET:self.requsetURL parameters:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        NSArray *arr = responseObject[@"subjects"];
+        [self parseDataWith:arr];
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+    }];
+}
+
+- (void)parseDataWith:(NSArray *)data{
+    
+    
+    for (NSDictionary *dic in data) {
+        WDF_Baoyu_Second_Model *model = [[WDF_Baoyu_Second_Model alloc] initWithDictionary:dic error:nil];
+        [self.dataSource addObject:model];
+    }
+    
+    //当前模型为数组第一个
+    self.currentSecond = self.dataSource.firstObject;
+    
+    [self loadDidFinish];
+}
+
+//数据请求完成
+- (void)loadDidFinish{
+    
+    [self addJiaojuanMovies];
+    
+    [self loadBackMovieImg];
+    
+    
+}
+
+/** 添加下面胶卷上的电影 */
+- (void)addJiaojuanMovies{
+    float imgHeight = CGRectGetHeight(self.RollView.frame)*0.65;
+    
+    float imgY = (CGRectGetHeight(self.RollView.frame) - imgHeight)/2.f;
+    float imgWidth = imgHeight*0.75;
+    
+    float dis = (CGRectGetWidth(self.RollView.frame) - 3* imgWidth)/4.f;
+    
+    
+    for (int i = 0; i<self.dataSource.count; i++) {
+        UIButton *imgView = [[UIButton alloc] initWithFrame:CGRectMake(dis + i*(dis + imgWidth) + i/3*dis, imgY, imgWidth, imgHeight)];
+        imgView.layer.cornerRadius = 5;
+        WDF_Baoyu_Second_Model *model = self.dataSource[i];
+        //        [imgView sd_setImageWithURL:[NSURL URLWithString:model.cover] forState:UIControlStateNormal];
+        [imgView sd_setBackgroundImageWithURL:[NSURL URLWithString:model.cover] forState:UIControlStateNormal];
+        
+        imgView.tag = BUTTON_TAG + i;
+        
+        [imgView addTarget:self action:@selector(movieButtonAction:) forControlEvents:UIControlEventTouchUpInside];
+        //        [imgView sd_setImageWithURL:[NSURL URLWithString:model.cover]];
+        
+        [self.RollView addSubview:imgView];
+    }
+}
+
+
+/** 下方按钮点击事件 */
+- (void)movieButtonAction:(UIButton *)button{
+    int num = (int)button.tag - BUTTON_TAG;
+    WDF_Baoyu_Second_Model *selectModel = self.dataSource[num];
+    self.currentSecond = selectModel;
+    
+    //移除之前的信息
+    [self removeLastMsg];
+    
+    //重置坐标
+    [self scrlloerGetBack];
+    
+    [UIView animateWithDuration:0.2 animations:^{
+        self.LastScroll.contentOffset = CGPointMake(SCREEN_WIDTH , 0);
+    } completion:^(BOOL finished) {
+        
+    }];
+    
+    //重新加载上面的图片
+    [self loadBackMovieImg];
+    
+    //重新加载剧照
+    [self loadMoviePhotos];
+    
+    [self buzhiDetail];
+    
+    
+}
+
+- (void)buzhiDetail{
+    
+    [self.lastImg sd_setImageWithURL:[NSURL URLWithString:self.currentSecond.cover]];
+    
+    
+    self.nameLabel.text = [NSString stringWithFormat:@"《%@》",self.currentSecond.title];
+    self.nameLabel.textAlignment = NSTextAlignmentRight;
+    
+    NSMutableAttributedString *ratText = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"豆瓣打分:%@分",self.currentSecond.rate]];
+    
+    [ratText addAttributes:@{
+                            NSForegroundColorAttributeName:[UIColor orangeColor],
+                            NSFontAttributeName:[UIFont boldSystemFontOfSize:18]
+                            }range:NSMakeRange(5, self.currentSecond.rate.length)];
+    [ratText addAttributes:@{
+                              NSForegroundColorAttributeName:[UIColor blackColor],
+                              NSFontAttributeName:[UIFont systemFontOfSize:11]
+                              }range:NSMakeRange(0, 5)];
+    [ratText addAttributes:@{
+                             NSForegroundColorAttributeName:[UIColor blackColor],
+                             NSFontAttributeName:[UIFont systemFontOfSize:11]
+                             }range:NSMakeRange(ratText.length-1, 1)];
+    self.ratingLabel.textAlignment = NSTextAlignmentRight;
+    self.ratingLabel.attributedText = ratText;
+    
+    
+//    self.ratingLabel.text = [NSString stringWithFormat:@"%@分",self.currentSecond.rate];
+    
+}
+
+- (void)scrlloerGetBack{
+    self.playerScroll.contentOffset = CGPointMake(0, 0);
+}
+
+
+/** 添加荧幕上的照片 */
+- (void)loadBackMovieImg{
+    
+    //1.电影照片
+    [self.movieImgView sd_setImageWithURL:[NSURL URLWithString:self.currentSecond.cover]];
+    
+    //2.改变title
+    self.title = self.currentSecond.title;
+    
+    //3.加载剧照
+    [self loadMoviePhotos];
+}
+
+/** 加载上方右侧的剧照 */
+- (void)loadMoviePhotos{
+    
+    
+    NSString *Path = [DOUBAN_BASE_PATH stringByAppendingFormat:MOVIE_PHOTOS_PATH,self.currentSecond.MySecondID];
+    
+    NSString *Path_2 = [Path stringByAppendingFormat:DOUBAN_APIKEY,0,20];
+    
+    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
+    
+    [manager GET:Path_2 parameters:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        
+        NSArray *arr = responseObject[@"photos"];
+        
+        [self parserPhotosWith:arr];
+        
+        
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        
+    }];
+    
+    
+    
+}
+
+
+/** 解析剧照信息 */
+- (void)parserPhotosWith:(NSArray *)data{
+    
+    [self.photots removeAllObjects];
+    
+    for (NSDictionary *dic in data) {
+        WDF_Baoyu_Photos_Model *modle = [[WDF_Baoyu_Photos_Model alloc] initWithDictionary:dic error:nil];
+        [self.photots addObject:modle];
+        
+    }
+    
+    //加载剧照
+    [self loadPhotos];
+}
+
+/** 移除之前的信息 */
+- (void)removeLastMsg{
+    [self.photots removeAllObjects];
+    
+    for (UIView *sub in self.playerScroll.subviews) {
+        if (sub == self.movieImgView) {
+            continue;
+        }
+        [sub removeFromSuperview];
+    }
+}
+
+/** 放上荧幕剧照 */
+- (void)loadPhotos{
+    float scrWidth = CGRectGetWidth(self.playerScroll.frame);
+    float scrHeight = CGRectGetHeight(self.playerScroll.frame);
+    
+    float butWidth = scrWidth*0.95;
+    float butHeitht = butWidth*0.67;
+    
+    
+    for (int i = 0; i < self.photots.count; i++) {
+        
+        WDF_Baoyu_Photos_Model *model = self.photots[i];
+        
+        
+        
+        UIView *view = [[UIView alloc] initWithFrame:CGRectMake((i+1)*scrWidth , 0, scrWidth, scrHeight)];
+
+        
+        UIImageView *butImgView = [[UIImageView alloc] init];
+        
+        
+        butImgView.frame = CGRectMake((scrWidth - butWidth)/2.f, (scrHeight-butHeitht)/2.f, butWidth, butHeitht);
+        
+        [butImgView sd_setImageWithURL:[NSURL URLWithString:model.image]];
+        
+        butImgView.userInteractionEnabled = YES;
+        
+        butImgView.tag = PHOTO_TAG + i;
+        
+        [butImgView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(imgBecomeBig:)]];
+        
+        butImgView.contentMode = UIViewContentModeScaleAspectFit;
+        
+        butImgView.layer.masksToBounds = YES;
+        
+        [view addSubview:butImgView];
+        
+        
+
+        
+        [self.playerScroll addSubview:view];
+        
+    }
+    self.playerScroll.contentSize = CGSizeMake((self.photots.count + 1)*scrWidth, scrHeight);
+    
+}
+
+
+#pragma mark =============== 荧幕图片放大动画 ================
+- (void)imgBecomeBig:(UITapGestureRecognizer *)tap{
+    WDF_BaoyuPhoto_ViewController *photo = [[WDF_BaoyuPhoto_ViewController alloc] init];
+    int num = (int)tap.view.tag - PHOTO_TAG;
+    
+    WDF_Baoyu_Photos_Model *model = self.photots[num];
+    
+    photo.model = model;
+    
+    [self presentViewController:photo animated:YES completion:nil];
+    
+//    if (Muzi) {
+//        lastRect = imgView.frame;
+//        lastScrRect = self.playerScroll.frame;
+//        lastContentSize = self.playerScroll.contentSize;
+//        float bili = lastScrRect.size.height/lastScrRect.size.width;
+//        
+//        [self.view bringSubviewToFront:self.playerScroll];
+//        [self.playerScroll bringSubviewToFront:imgView];
+//        
+//        
+//        [UIView animateWithDuration:0.5 animations:^{
+//            self.playerScroll.frame = CGRectMake(0, (SCREEN_HEIGHT- SCREEN_WIDTH*bili)/2.f, SCREEN_WIDTH, SCREEN_WIDTH*bili);
+//            imgView.frame = CGRectMake(0, -200, SCREEN_WIDTH, SCREEN_WIDTH*1.5);
+//        } completion:^(BOOL finished) {
+//            Muzi = 1- Muzi;
+//            self.playerScroll.contentSize = CGSizeMake(0, 0);
+//        }];
+//    }else{
+//        self.playerScroll.contentSize = lastContentSize;
+//        [UIView animateWithDuration:0.5 animations:^{
+//            self.playerScroll.frame = lastScrRect;
+//            imgView.frame = lastRect;
+//        } completion:^(BOOL finished) {
+//            Muzi = 1- Muzi;
+//        }];
+//    }
+//    
+//    self.playerScroll.pagingEnabled = !Muzi;
+}
+
+/**
+ *  每个按钮的事件 由BOOL控制切换事件
+ */
+//- (void)buttonAction:(UIButton *)button{
+//    if (Muzi) {
+//        [self.view bringSubviewToFront:button];
+//        lastRect = button.frame;
+//        [UIView animateWithDuration:0.5 animations:^{
+//            button.frame = self.view.frame;
+//        } completion:^(BOOL finished) {
+//            Muzi = 1- Muzi;
+//        }];
+//    }else{
+//        [UIView animateWithDuration:0.5 animations:^{
+//            button.frame = lastRect;
+//        } completion:^(BOOL finished) {
+//            Muzi = 1- Muzi;
+//        }];
+//    }
+//}
+
+
+#pragma mark =============== scroll协议 ================
+//- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView{
+//    float nowX = self.playerScroll.contentOffset.x;
+//    float width = self.playerScroll.frame.size.width;
+//    int num = nowX/width;
+//    NSLog(@"%d",num);
+//    WDF_Baoyu_Photos_Model *model = self.photots[num - 1];
+//
+//    self.descLabel.text = model.desc;
+//}
+
+
+#pragma mark =============== 懒加载================
+- (NSMutableArray *)dataSource{
+    if (!_dataSource) {
+        _dataSource = [NSMutableArray array];
+    }
+    return _dataSource;
+}
+
+- (NSMutableArray *)photots{
+    if (!_photots) {
+        _photots = [NSMutableArray array];
+    }
+    return _photots;
+}
+
+- (UIImageView *)playerImgView{
+    if (!_playerImgView) {
+        _playerImgView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, PLAYER_HEIGHT)];
+        _playerImgView.image = [UIImage imageNamed:@"fangyingji_2.jpg"];
+    }
+    return _playerImgView;
+}
+
+- (UIScrollView *)LastScroll{
+    if (!_LastScroll) {
+        _LastScroll = [[UIScrollView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(self.playerImgView.frame), SCREEN_WIDTH*2, ROLL_HEIGHT)];
+ 
+        _LastScroll.contentSize = CGSizeMake(2*SCREEN_WIDTH, ROLL_HEIGHT);
+    }
+    return _LastScroll;
+}
+
+- (UIView *)detailView{
+    if (!_detailView) {
+        _detailView = [[UIView alloc] initWithFrame:CGRectMake(SCREEN_WIDTH, 0, SCREEN_WIDTH, ROLL_HEIGHT)];
+        _detailView.backgroundColor = RGB(238, 238, 238, 1);
+        
+    }
+    return _detailView;
+}
+
+
+- (UIScrollView *)RollView{
+    if (!_RollView) {
+        _RollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, ROLL_HEIGHT)];
+        [self addRollBackImg];
+        [self.view addSubview:_RollView];
+        _RollView.contentSize = CGSizeMake(7*SCREEN_WIDTH, ROLL_HEIGHT);
+        
+        
+    }
+    return _RollView;
+}
+
+- (void)addRollBackImg{
+    for (int i = 0; i < 21 ; i++) {
+        float rollWidth = SCREEN_WIDTH/3.f;
+        float rollHeight = ROLL_HEIGHT;
+        
+        UIImageView *imgView = [[UIImageView alloc] initWithFrame:CGRectMake(i*rollWidth, 0, rollWidth, rollHeight)];
+        imgView.image = [UIImage imageNamed:@"jiaojuan.jpg"];
+        
+        _RollView.pagingEnabled = YES;
+        
+        [_RollView addSubview:imgView];
+    }
+}
+
+- (UIImageView *)BackImgView{
+    if (!_BackImgView) {
+        _BackImgView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.playerImgView.frame)*0.78, CGRectGetHeight(self.playerImgView.frame)*0.77)];
+        _BackImgView.image = [UIImage imageNamed:@"f_3.jpg"];
+        _BackImgView.userInteractionEnabled = YES;
+    }
+    return _BackImgView;
+}
+
+- (UILabel *)blackLabel{
+    float backHeight = CGRectGetHeight(self.BackImgView.frame);
+    
+    float backWidth = CGRectGetWidth(self.BackImgView.frame);
+    
+    if (!_blackLabel) {
+        _blackLabel = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, backWidth , backHeight * 0.9)];
+        _blackLabel.backgroundColor = [UIColor blackColor];
+        
+    }
+    return _blackLabel;
+}
+
+- (UIScrollView *)playerScroll{
+    if (!_playerScroll) {
+        
+        float backHeight = CGRectGetHeight(self.BackImgView.frame);
+        
+        float backWidth = CGRectGetWidth(self.BackImgView.frame);
+        
+        
+        
+        _playerScroll = [[UIScrollView alloc] initWithFrame:CGRectMake(backWidth*0.05, backHeight*0.11, backWidth*0.9,backHeight*0.65)];
+
+        
+        _playerScroll.contentSize = CGSizeMake(backWidth*0.9*21, 0);
+
+        _playerScroll.pagingEnabled = YES;
+        
+        _playerScroll.userInteractionEnabled = YES;
+        
+        _playerScroll.delegate = self;
+    }
+    return _playerScroll;
+}
+
+- (UIImageView *)movieImgView{
+    if (!_movieImgView) {
+        float playHeight = CGRectGetHeight(self.playerScroll.frame);
+        float playWidth = CGRectGetWidth(self.playerScroll.frame);
+        float movieHeight = playHeight*0.85;
+        float movieWidth = movieHeight*0.75;
+        float zuoSc = movieHeight*0.25;
+        
+        _movieImgView = [[UIImageView alloc] initWithFrame:CGRectMake((playWidth-movieWidth)/2.f, (playHeight-movieHeight)/2.f, movieWidth, movieHeight)];
+        
+        UIImageView *zuo = [[UIImageView alloc] initWithFrame: CGRectMake((playWidth-movieWidth)/2.f + movieWidth + 20, (playHeight-zuoSc)/2.f ,zuoSc,zuoSc)];
+        zuo.image = [UIImage imageNamed:@"zuo"];
+        [self.playerScroll addSubview:zuo];
+
+    }
+    return _movieImgView;
+}
+
+- (UILabel *)descLabel{
+    if (!_descLabel) {
+        _descLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMinX(self.playerScroll.frame), CGRectGetMaxY(self.playerScroll.frame)+15, CGRectGetWidth(self.playerScroll.frame), 40)];
+//        _descLabel.backgroundColor = [UIColor whiteColor];
+        _descLabel.textAlignment = NSTextAlignmentCenter;
+        _descLabel.textColor = [UIColor whiteColor];
+        _descLabel.font = [UIFont boldSystemFontOfSize:13];
+        _descLabel.numberOfLines = 0;
+
+    }
+    return _descLabel;
+}
+
+- (UIImageView *)lastImg{
+    if (!_lastImg) {
+        float lastWidth = CGRectGetWidth(self.detailView.frame);
+        float lastHeitht = CGRectGetHeight(self.detailView.frame);
+        float myHeight = lastHeitht*0.8;
+        float myWidth = myHeight*0.75;
+        
+        _lastImg = [[UIImageView alloc] initWithFrame:CGRectMake(lastWidth - myWidth -10, (lastHeitht - myHeight)/2.f, myWidth, myHeight)];
+        
+    }
+    return _lastImg;
+}
+
+- (UILabel *)nameLabel{
+    if (!_nameLabel) {
+        float lastWidth = CGRectGetWidth(self.detailView.frame);
+        float myWidth = lastWidth*0.7;
+        float myHeight = SCREEN_HEIGHT * 0.08;
+        
+        _nameLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMinX(self.lastImg.frame) - 10 - myWidth, CGRectGetMinY(self.lastImg.frame), myWidth, myHeight)];
+        _nameLabel.textColor = [UIColor blackColor];
+        _nameLabel.font = [UIFont boldSystemFontOfSize:18];
+        _nameLabel.numberOfLines = 0;
+        _nameLabel.textAlignment = NSTextAlignmentRight;
+        
+        
+    }
+    return _nameLabel;
+}
+
+- (UILabel *)ratingLabel{
+    if (!_ratingLabel) {
+        float myWidth = 0.18 * SCREEN_HEIGHT;
+        float myHeight = 0.05 * SCREEN_HEIGHT;
+        
+        _ratingLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(self.nameLabel.frame) - myWidth -10, CGRectGetMaxY(self.nameLabel.frame) , myWidth, myHeight)];
+        
+    }
+    return _ratingLabel;
+}
+
+- (UIButton *)douban{
+    if (!_douban) {
+        
+        float mySc = SCREEN_HEIGHT * 0.05;
+        _douban = [[UIButton alloc] initWithFrame:CGRectMake(CGRectGetMaxX(self.ratingLabel.frame)-mySc, CGRectGetMaxY(self.ratingLabel.frame) + 20, mySc, mySc)];
+        [_douban setImage:[UIImage imageNamed:@"douban"].originalImage forState:UIControlStateNormal];
+        [_douban addTarget:self action:@selector(goToDouban) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _douban;
+}
+
+- (void)goToDouban{
+    WDF_DoubanWeb_ViewController *douban = [[WDF_DoubanWeb_ViewController alloc] init];
+    douban.URL = self.currentSecond.url;
+    [self.navigationController pushViewController:douban animated:YES];
+}
+
+
+
+- (UIButton *)xiangqing{
+    if (!_xiangqing) {
+        _xiangqing = [[UIButton alloc] initWithFrame:CGRectMake(CGRectGetMinX(self.douban.frame)-20-CGRectGetWidth(self.douban.frame), CGRectGetMinY(self.douban.frame), CGRectGetWidth(self.douban.frame), CGRectGetWidth(self.douban.frame))];
+        [_xiangqing setImage:[UIImage imageNamed:@"xiang"].originalImage forState:UIControlStateNormal];
+        [_xiangqing addTarget:self action:@selector(goToXiang) forControlEvents:UIControlEventTouchUpInside];
+    }
+    return _xiangqing;
+}
+
+- (void)goToXiang{
+    WDF_Movie_message_ViewController *movie = [[WDF_Movie_message_ViewController alloc] init];
+    movie.ID = self.currentSecond.MySecondID;
+    [self.navigationController pushViewController:movie animated:YES];
+}
+
+@end

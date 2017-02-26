@@ -1,0 +1,421 @@
+//
+//  WDF_Baoyu_HomePage_ViewController.m
+//  100Movies_2.0
+//
+//  Created by qianfeng on 16/1/9.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+#import "WDF_Baoyu_HomePage_ViewController.h"
+
+//个人
+#import "Baoyu_fangyingting_View.h"
+#import "WDF_Baoyu_First_Model.h"
+#import "WDF_HomeNav_ViewController.h"
+
+//我的第三方
+#import "Baoyu_LineLayout.h"
+#import "Baoyu_Cell_CollectionViewCell.h"
+#import "UIImage+MuzipooOriginallImage.h"
+
+//其他第三方
+#import "AFNetworking.h"
+
+//其他人
+#import "WDF_Movie_message_ViewController.h"
+
+//宏
+#define BUTTON_TAG 666
+#define BUTTON_DIS 18
+
+
+
+@interface WDF_Baoyu_HomePage_ViewController ()
+
+@property (nonatomic, strong) UIScrollView *mainScroll;
+
+@property (nonatomic, strong) Baoyu_fangyingting_View *fangyingting;
+
+@property (nonatomic ,strong) UIView *buttonView;
+
+/** 左侧侧拉按钮 */
+@property (nonatomic,strong) UIButton *openDrawerButton;
+
+/** 请求数据 */
+@property (nonatomic, strong) NSString *requestURLstr;
+
+/** 数据源 */
+@property (nonatomic, strong) NSMutableArray *dataSource;
+
+/** label数组 */
+@property (nonatomic, strong) NSMutableArray *labels;
+
+
+
+@end
+
+@implementation WDF_Baoyu_HomePage_ViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    //首次进入时的数据请求
+    self.requestURLstr = [DOUBAN_BASE_PATH stringByAppendingString:THEATERS_PATH];
+    
+    //添加放映厅
+    [self addFirstFangyingting];
+    
+    
+    
+    //加载所有数据
+    [self loadHomePageAllData];
+    
+    
+    //设置页面属性
+    [self setNavItem];
+    
+    //添加6个button
+    [self addSixButtons];
+    
+    self.mainScroll.contentSize = CGSizeMake([UIScreen mainScreen].bounds.size.width, CGRectGetMaxY(self.buttonView.frame)+ 50);
+    
+    //添加main界面
+    [self.view addSubview:self.mainScroll];
+    
+    
+    self.view.backgroundColor = [UIColor blackColor];
+    
+    
+}
+
+
+
+
+#pragma mark =============== 添加放映厅 ================
+- (void)addFirstFangyingting{
+    
+    [self.mainScroll addSubview:self.fangyingting];
+    
+    
+    __block WDF_Baoyu_HomePage_ViewController *blockSelf = self;
+    
+    self.fangyingting.goToChangYong = ^(NSString *MyID){
+        NSLog(@"%@",MyID);
+        WDF_Movie_message_ViewController *wangChangYong = [[WDF_Movie_message_ViewController alloc] init];
+        wangChangYong.ID = MyID;
+        
+        [blockSelf.navigationController pushViewController:wangChangYong animated:YES];
+        
+    };
+    
+    
+}
+
+#pragma mark =============== 6个button ================
+- (void)addSixButtons{
+    
+    self.buttonView = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(self.fangyingting.seatView.frame) - 5, CGRectGetWidth(self.mainScroll.frame), CGRectGetWidth(self.mainScroll.frame)*0.5)];
+//    self.buttonView.backgroundColor = [UIColor orangeColor];
+    
+    
+    for (int i = 0 ; i < 6; i++) {
+        UIButton *button = [self creatButtonWithNumber:i withX:BUTTON_DIS + i%3*((CGRectGetWidth(self.buttonView.frame) - 4*BUTTON_DIS)/3.f+ BUTTON_DIS) withY:BUTTON_DIS + i/3*(((CGRectGetHeight(self.buttonView.frame) - 3*BUTTON_DIS)/2.f + BUTTON_DIS) - 5)];
+        
+        [self.buttonView addSubview:button];
+    }
+    
+    [self.mainScroll addSubview:self.buttonView];
+    
+    
+}
+
+//button工厂
+- (UIButton *)creatButtonWithNumber:(int)num withX:(CGFloat)x withY:(CGFloat)y{
+    UIButton *button = [[UIButton alloc] initWithFrame:CGRectMake(x, y, (CGRectGetWidth(self.buttonView.frame) - 4*BUTTON_DIS)/3.f, (CGRectGetHeight(self.buttonView.frame) - 3*BUTTON_DIS)/2.f)];
+    
+//    button.backgroundColor = [UIColor blueColor];
+    
+    UIButton *imgView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(button.frame),  CGRectGetWidth(button.frame)/2.f)];
+    
+    [imgView setImage:[UIImage imageNamed:[NSString stringWithFormat:@"ticketButton%d",num]] forState:UIControlStateNormal];
+//    imgView.image = [UIImage imageNamed:[NSString stringWithFormat:@"ticketButton%d",num]];
+    
+    [button addSubview:imgView];
+    
+    
+    //下方标题
+    UILabel *lable = [[UILabel alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(imgView.frame) + 5, CGRectGetWidth(button.frame), CGRectGetHeight(button.frame)- CGRectGetHeight(imgView.frame) )];
+    lable.textAlignment = NSTextAlignmentCenter;
+    lable.layer.cornerRadius = 8;
+    lable.layer.masksToBounds = YES;
+    lable.font = [UIFont systemFontOfSize:10];
+    [self.labels addObject:lable];
+    
+    switch (num) {
+        case 0:
+        {
+            
+            lable.text = @"正在热映";
+            lable.textColor = RGB(251, 198, 66, 1);
+            break;
+        }
+        case 1:
+        {
+            
+            lable.text = @"TOP250";
+            lable.textColor = RGB(250, 133, 52, 1);
+            break;
+        }
+        case 2:
+        {
+            
+            lable.text = @"即将上映";
+            lable.textColor = RGB(214, 186, 145, 1);
+            break;
+        }
+        case 3:
+        {
+            
+            lable.text = @"北美票房冠军";
+            lable.textColor = RGB(89, 195, 153, 1);
+            break;
+        }
+        case 4:
+        {
+            
+            lable.text = @"佳片欣赏";
+            lable.textColor = RGB(163, 216, 212, 1);
+            break;
+        }
+        case 5:
+        {
+            
+            lable.text = @"新片榜";
+            lable.textColor = RGB(231, 193, 138, 1);
+            break;
+        }
+            
+        default:
+            break;
+    }
+    
+    [button addSubview:lable];
+    
+    imgView.tag = BUTTON_TAG + num;
+    
+    [imgView addTarget:self action:@selector(ticketsButtonAction:) forControlEvents:UIControlEventTouchUpInside];
+    
+    
+    return button;
+}
+
+
+//button注册事件
+
+- (void)ticketsButtonAction:(UIButton *)buttton{
+    [self.fangyingting closeWeiMu];
+    
+    NSInteger tag = buttton.tag - BUTTON_TAG ;
+    
+    [self changeLabelColorWith:tag];
+    
+    int start = 0;
+    switch (tag) {
+        case 0:
+        {
+            self.requestURLstr = [DOUBAN_BASE_PATH stringByAppendingString:THEATERS_PATH];
+            break;
+        }
+        case 1:
+        {
+            self.requestURLstr = [DOUBAN_BASE_PATH stringByAppendingString:TOP250_PATH];
+            start = arc4random()%10*20;
+            break;
+        }
+        case 2:
+        {
+            self.requestURLstr = [DOUBAN_BASE_PATH stringByAppendingString:COMING_SOON_PATH];
+            break;
+        }
+        case 3:
+        {
+            self.requestURLstr = [DOUBAN_BASE_PATH stringByAppendingString:TOP250_PATH];
+            start = arc4random()%10*20;
+
+            break;
+        }
+        case 4:
+        {
+            self.requestURLstr = [DOUBAN_BASE_PATH stringByAppendingString:TOP250_PATH];
+            start = arc4random()%10*20;
+
+            break;
+        }
+        case 5:
+        {
+            self.requestURLstr = [DOUBAN_BASE_PATH stringByAppendingString:NEW_MOVIES_PATH];
+            break;
+        }
+        default:
+            break;
+    }
+    
+    self.requestURLstr = [self.requestURLstr stringByAppendingFormat:DOUBAN_APIKEY,start,20];
+    
+    NSLog(@"%@",self.requestURLstr);
+    
+    //重新请求数据
+    [self loadHomePageAllData];
+    
+    
+}
+
+
+//改变label颜色
+- (void)changeLabelColorWith:(NSInteger)tag{
+    for (UILabel *label in self.labels) {
+        label.backgroundColor = [UIColor clearColor];
+    }
+    
+    UILabel *label = self.labels[tag];
+    label.backgroundColor = [UIColor whiteColor];
+    
+}
+
+
+#pragma mark =============== 单例 ================
++ (instancetype)defulatHomePage{
+    static WDF_Baoyu_HomePage_ViewController *Vc = nil;
+    if (Vc == nil) {
+        Vc = [[WDF_Baoyu_HomePage_ViewController alloc] init];
+    }
+    return Vc;
+}
+
+
+#pragma mark =============== 请求数据 ================
+- (void)loadHomePageAllData{
+    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
+    
+    [manager GET:self.requestURLstr parameters:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        
+        [self pareseDataWith:responseObject[@"subjects"]];
+        
+        
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        
+    }];
+}
+
+/** 解析网络数据 */
+- (void)pareseDataWith:(NSDictionary *)data{
+    
+    NSMutableArray *dataArr = [NSMutableArray array];
+    
+    for (NSDictionary *dic in data) {
+        //1.存入模型
+        WDF_Baoyu_First_Model *model = [[WDF_Baoyu_First_Model alloc] initWithDictionary:dic error:nil];
+        [dataArr addObject:model];
+    }
+    
+    //传给放映厅
+    [self.fangyingting setDataWith:dataArr];
+    
+    
+    [self loadDidFinish];
+}
+
+
+/** 数据解析完成 */
+- (void)loadDidFinish{
+    [self.fangyingting openWeiMu];
+}
+
+#pragma mark =============== 界面设置 ================
+/** 设置navItem */
+- (void)setNavItem{
+    UIView *titleView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 100, 37)];
+    UIImageView *titleImg = [[UIImageView alloc] initWithFrame:titleView.frame];
+    titleImg.image = [UIImage imageNamed:@"zi.jpg"];
+    [titleView addSubview:titleImg];
+    self.navigationItem.titleView = titleView;
+    //    self.navigationController.navigationBar.backgroundColor = [UIColor colorWithPatternImage:[UIImage imageNamed:@"navColor.jpg"]];
+    
+    
+    
+    self.navigationController.navigationBar.barStyle = UIBarStyleBlack;
+    //    self.navigationController.navigationBar.translucent = NO;
+    
+    [self.navigationController.navigationBar setBackgroundImage:[UIImage imageNamed:@"nav_2.jpg"] forBarMetrics:UIBarMetricsDefault];
+    
+
+    [self addDraweButton];
+}
+
+//添加抽屉按钮
+- (void)addDraweButton{
+    self.openDrawerButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    self.openDrawerButton.frame = CGRectMake(0, 0, 35, 35 );
+    [self.openDrawerButton setImage:[UIImage imageNamed:@"hamburger"] forState:UIControlStateNormal];
+    [self.openDrawerButton addTarget:self action:@selector(openDrawer:) forControlEvents:UIControlEventTouchUpInside];
+    
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:self.openDrawerButton];
+}
+
+/**
+ *  openDeaw注册事件
+ */
+- (void)openDrawer:(UIButton *)button{
+    
+    ICSDrawerController *ics = [ICSDrawerController defaultICSViewControllerWith:nil centerViewController:nil];
+    
+    if (ics.drawerState == ICSDrawerControllerStateClosed) {
+        [ics open];
+    }
+    if (ics.drawerState == ICSDrawerControllerStateOpen) {
+        [ics close];
+    }
+
+    
+}
+
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+
+#pragma mark =============== 懒加载 ================
+- (UIScrollView *)mainScroll{
+    if (!_mainScroll) {
+        _mainScroll = [[UIScrollView alloc] initWithFrame:self.view.bounds];
+        _mainScroll.userInteractionEnabled = YES;
+        _mainScroll.bounces = NO;
+    }
+    return _mainScroll;
+}
+
+
+- (Baoyu_fangyingting_View *)fangyingting{
+    if (!_fangyingting) {
+      _fangyingting = [[Baoyu_fangyingting_View alloc] initWithMyFrame:CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width,  SCREEN_HEIGHT * 0.54) ];
+    }
+    return _fangyingting;
+}
+
+- (NSMutableArray *)dataSource{
+    if (!_dataSource) {
+        _dataSource = [NSMutableArray array];
+    }
+    return _dataSource;
+}
+
+- (NSMutableArray *)labels{
+    if (!_labels) {
+        _labels = [NSMutableArray array];
+    }
+    return _labels;
+}
+
+@end

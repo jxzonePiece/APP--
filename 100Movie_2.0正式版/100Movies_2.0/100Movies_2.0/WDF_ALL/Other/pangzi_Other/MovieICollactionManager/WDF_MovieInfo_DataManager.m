@@ -1,0 +1,79 @@
+//
+//  WDF_MovieInfo_DataManager.m
+//  100Movies_2.0
+//
+//  Created by qianfeng on 16/1/11.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+#import "WDF_MovieInfo_DataManager.h"
+#import "WDF_Movie_Message_Model.h"
+
+@implementation WDF_MovieInfo_DataManager
+
+// 单例的实现
++ (instancetype)sharedManager{
+    static WDF_MovieInfo_DataManager *_manager=nil;
+    if (_manager == nil) {
+        NSString *path=NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+        // 做一个实例化
+        _manager=[[WDF_MovieInfo_DataManager alloc] initWithPath:[path stringByAppendingString:@"/data.db"]];
+        // 先打开数据库
+        [_manager open];
+        NSString *sql=@"create table if not exists Movies (ID integer primary key,title text,summary text)";
+        // 执行建表
+        [_manager executeUpdate:sql];
+    }
+    return _manager;
+}
+
+// 增
+- (void)addRecord:(WDF_Movie_Message_Model *)model{
+    
+    // 增操作
+    NSString *sql=@"insert into Movies (ID,title,summary) values (?,?,?)";
+    
+    // 执行
+    [self executeUpdate:sql,model.id,model.title,model.summary];
+}
+
+// 查
+- (NSArray *)selectRecord{
+    
+    //数组,这个数组用来存放查询结果转换的模型
+    NSMutableArray *allRecods=[[NSMutableArray alloc] init];
+    
+    //查询语句
+    NSString *sql=@"select * from Movies";
+    FMResultSet *set = [self executeQuery:sql];
+    while (set.next) {
+        WDF_Movie_Message_Model *model=[[WDF_Movie_Message_Model alloc] init];
+        
+        model.id=[set objectForColumnIndex:0];
+        model.title=[set objectForColumnIndex:1];
+        model.summary=[set objectForColumnIndex:2];
+        [allRecods addObject:model];
+    }
+    return allRecods;
+}
+// 删除
+- (void)deleteRecord:(WDF_Movie_Message_Model *)model{
+    NSString *sql=@"delete from Movies where ID=?";
+    
+    [self executeUpdate:sql,model.id];
+}
+
+- (BOOL)selectePointID:(NSString *)ID{
+    NSString *sql=@"select * from Movies where ID=?";
+    FMResultSet *set = [self executeQuery:sql,ID];
+    if(set.next){
+        return YES;
+    }else{
+        return NO;
+    }
+
+}
+
+
+
+@end

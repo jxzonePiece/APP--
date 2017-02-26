@@ -1,0 +1,120 @@
+//
+//  AppDelegate.m
+//  100Movies_2.0
+//
+//  Created by qianfeng on 16/1/8.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+#import "AppDelegate.h"
+#import "WDFGuidPageViewController.h"
+
+#import "ICSDrawerController.h"
+#import "WDF_Left_ViewController.h"
+#import "WDF_Baoyu_HomePage_ViewController.h"
+#import "WDF_HomeNav_ViewController.h"
+
+
+@interface AppDelegate ()
+
+@end
+
+@implementation AppDelegate
+
+
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    // Override point for customization after application launch.
+//    [self setGuideViewController];
+    
+    [self setApprance];
+    
+    [self creatRootViewControllerTab];
+    
+    return YES;
+}
+
+#pragma mark =============== 全局改变 ================
+- (void)setApprance{
+    UINavigationBar *bar = [UINavigationBar appearance];
+    [bar setBackgroundImage:[UIImage imageNamed:@"nav_2.jpg"] forBarMetrics:UIBarMetricsDefault];
+    bar.tintColor = [UIColor whiteColor];
+//    UIColor *color = RGB(253, 229, 158, 1);
+    NSDictionary *dic = @{
+                          NSForegroundColorAttributeName:[UIColor yellowColor],
+                          NSFontAttributeName:[UIFont systemFontOfSize:20]
+                          };
+    bar.titleTextAttributes = dic;
+    
+//    bar.tintColor = [UIColor whiteColor];
+}
+
+
+/** 设置TabBar控制器 */
+- (void)creatRootViewControllerTab{
+    
+    UITabBarController *tab = [[UITabBarController alloc] init];
+//    tab.tabBar.translucent = NO;
+//    tab.tabBar.barStyle = UIBarStyleBlack;
+    tab.tabBar.tintColor = RGB(214, 40, 75, 1);
+    tab.tabBar.barStyle = UIBarStyleBlack;
+    
+    
+    NSArray *className = @[@"WDF_Baoyu_HomePage_ViewController",@"WDF_GuangGuang_ViewController",@"WDF_News_Message_ViewController",@"WDFMeViewController"];
+    NSArray *titleName = @[@"首页",@"逛逛",@"资讯",@"我"];
+    NSArray *imgS = @[@"tab_1_1",@"tab_2_1",@"tab_3_1",@"tab_4_1"];
+    NSArray *imgH = @[@"tab_1_2",@"tab_2_2",@"tab_3_2",@"tab_4_2"];
+    
+    
+    for (int i =0; i <titleName.count; i ++) {
+        Class class = NSClassFromString(className[i]);
+        UIViewController *vc = [[class alloc] init];
+        
+        if ( i == 0) {
+            WDF_Baoyu_HomePage_ViewController *homePage = [WDF_Baoyu_HomePage_ViewController defulatHomePage];
+            homePage.title = @"首页";
+            
+            WDF_Left_ViewController *left = [[WDF_Left_ViewController alloc] init];
+            
+            WDF_HomeNav_ViewController *nav = [WDF_HomeNav_ViewController defaultHomeNav];
+            [nav addChildViewController:homePage];
+            
+            
+            ICSDrawerController *ics = [ICSDrawerController defaultICSViewControllerWith:left centerViewController:nav];
+            ics.title = @"首页";
+            
+            ics.tabBarItem = [[UITabBarItem alloc] initWithTitle:@"首页" image:[UIImage imageNamed:imgS[i]] selectedImage:[UIImage imageNamed:imgH[i]]];
+            
+            [tab addChildViewController:ics];
+            continue;
+        }
+        
+        vc.title = titleName[i];
+        
+        UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+
+//        nav.tabBarItem = [[UITabBarItem alloc] initWithTitle:titleName[i] image:[UIImage imageNamed:imgS[i]] selectedImage:[UIImage imageNamed:imgH[i]]];
+        vc.tabBarItem = [[UITabBarItem alloc] initWithTitle:titleName[i] image:[UIImage imageNamed:imgS[i]] selectedImage:[UIImage imageNamed:imgH[i]]];
+        
+        
+        [tab addChildViewController:nav];
+    }
+    
+    self.window.rootViewController = tab;
+    
+}
+/** 创建引导页*/
+- (void)setGuideViewController{
+    //1.实例化GuideViewController对象
+    WDFGuidPageViewController *guide=[[WDFGuidPageViewController alloc] init];
+    //代码快中的内容
+    guide.compete =^{
+        //切换window的根视图控制器
+        [self creatRootViewControllerTab];
+    };
+    //2.设置根视图控制器
+    self.window.rootViewController=guide;
+}
+
+
+
+@end

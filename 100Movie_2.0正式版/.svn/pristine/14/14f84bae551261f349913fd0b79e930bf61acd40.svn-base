@@ -1,0 +1,29 @@
+//
+//  WDF_News_Web_ViewController.m
+//  100Movies_2.0
+//
+//  Created by qianfeng on 16/1/13.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+#import "WDF_News_Web_ViewController.h"
+#import "WDF_News_Message_Model.h"
+@interface WDF_News_Web_ViewController ()
+
+@end
+
+@implementation WDF_News_Web_ViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    UIWebView *newsWeb = [[UIWebView alloc] initWithFrame:self.view.bounds];
+    NSString *string = [NSString stringWithFormat:@"http://mall.wv.mtime.cn/?mid=218085&relatedNativeType=1&utm_source=app_movie#!/news/movie/%d/",self.model.id];
+    NSURLRequest *request = [[NSURLRequest alloc] initWithURL:[NSURL URLWithString:string]];
+    [newsWeb loadRequest:request];
+    [self.view addSubview:newsWeb];
+}
+
+
+
+@end

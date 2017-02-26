@@ -1,0 +1,166 @@
+//
+//  NetInterFace.h
+//  100Movies_2.0
+//
+//  Created by qianfeng on 16/1/8.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+
+
+
+/**
+ 所有的网络接口
+ */
+#ifndef NetInterFace_h
+#define NetInterFace_h
+
+
+/*
+ 测试： <寻龙诀>
+ 电影ID :  3077412
+ 测试： 高晓松
+ 影人ID :  1313094
+ */
+ 
+ 
+/** 1.豆瓣主机 */
+#define DOUBAN_BASE_PATH @"http://api.douban.com"
+
+/** ***********2榜单****************** */
+/** 2.1正在上映 */
+#define THEATERS_PATH @"/v2/movie/in_theaters"
+
+/** 2.2即将上映 */
+#define COMING_SOON_PATH @"/v2/movie/coming_soon"
+
+/** 2.3TOP250 */
+#define TOP250_PATH @"/v2/movie/top250"
+
+
+#warning  下面的需要添加  APIKey
+/** 2.4口碑榜 */
+#define WEEKLY_PATH @"/v2/movie/weekly"
+
+/** 2.5北美票房榜 */
+#define US_BOX_PATH @"/v2/movie/us_box"
+
+/** 2.6新片榜 */
+#define NEW_MOVIES_PATH @"/v2/movie/new_movies"
+
+/** 2.7电影搜索*/
+#define SERARCH_PATH @"/v2/movie/search?q=%@"
+
+
+/** ************3电影详细*************** */
+#define MOVIE_PATH @"/v2/movie/subject/%@" //%@填写电影ID
+
+
+#warning  下面的都需要添加  APIKey
+/** 电影剧照 */
+#define MOVIE_PHOTOS_PATH @"/v2/movie/subject/%@/photos"  //%@填写电影ID
+
+/** 电影长评 */
+#define MOVIE_REVIEWS_PATH @"/v2/movie/subject/%@/reviews"  //%@填写电影ID
+
+
+/** 电影短评 */
+#define MOVIE_COMMENTS_PATH @"/v2/movie/subject/%@/comments"  //%@填写电影ID
+
+
+/** ************4影人详细***************** */
+
+/** 影人主要信息 */
+#define CELEBRITY_PATH @"/v2/movie/celebrity/%@"    //%@填写影人ID
+
+/** 影人剧照 */
+#define CELEBRITY_PHOTOS_PATH @"/v2/movie/celebrity/%@/photos" //%@填写影人ID
+
+/** 影人作品 */
+#define CELEBRITY_WORKS_PATH @"/v2/movie/celebrity/%@/works"  //%@填写影人ID
+
+/** *****************豆瓣APIkey**************** */
+
+/** 豆瓣APIkey 拼在后面  第一个参数从几开始  第二个参数多少个*/
+#define DOUBAN_APIKEY @"?apikey=0b2bdeda43b5688921839c8ecb20399b&start=%d&count=%d"
+
+/** black专用APIKey */
+#define DOUBAN_APIKEY_BLACK_PRIVATE @"?apikey=0b2bdeda43b5688921839c8ecb20399b"
+#define MTIME_NEWAPI_BLACK @"http://api.m.mtime.cn/News/NewsList.api?pageIndex=%d"
+
+//电影分类
+/** GET 方法 */
+//最新电影  每页20个 从0页开始
+//热门
+#define HOTMOVIE_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E7%83%AD%E9%97%A8&sort=recommend&page_limit=21&page_start=0"
+
+//最新
+#define  NEWMOVIE_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E6%9C%80%E6%96%B0&sort=recommend&page_limit=21&page_start=0"
+
+//同志电影
+#define COMRADE_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E5%90%8C%E5%BF%97&sort=recommend&page_limit=21&page_start=0"
+
+//冷门佳片
+#define MISS_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E5%86%B7%E9%97%A8%E4%BD%B3%E7%89%87&sort=recommend&page_limit=21&page_start=0"
+
+//经典
+#define JINGDINA_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E7%BB%8F%E5%85%B8&sort=recommend&page_limit=21&page_start=0"
+
+//动作
+#define ACTION_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E5%8A%A8%E4%BD%9C&sort=recommend&page_limit=21&page_start=0"
+
+//喜剧
+#define COMEDY_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E5%96%9C%E5%89%A7&sort=recommend&page_limit=21&page_start=0"
+
+//搞怪
+#define GAOGUAI_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E6%90%9E%E6%80%AA&sort=recommend&page_limit=21&page_start=0"
+
+//爱情
+#define LOVE_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E7%88%B1%E6%83%85&sort=recommend&page_limit=21&page_start="
+
+//悬疑
+#define XUANYI_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E6%82%AC%E7%96%91&sort=recommend&page_limit=21&page_start=0"
+
+//恐怖
+#define KONGBU_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E6%81%90%E6%80%96&sort=recommend&page_limit=21&page_start=0"
+
+//治愈
+#define ZHIYU_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E6%B2%BB%E6%84%88&sort=recommend&page_limit=21&page_start=0"
+
+//青春
+#define YONG_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E9%9D%92%E6%98%A5&sort=recommend&page_limit=21&page_start=0"
+
+//小清新
+#define XIAOQINGXIN_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E5%B0%8F%E6%B8%85%E6%96%B0&sort=recommend&page_limit=21&page_start=0"
+
+//文艺
+#define WENYI_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E6%96%87%E8%89%BA&sort=recommend&page_limit=21&page_start=0"
+
+//高分
+#define GAOFEN_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E9%AB%98%E5%88%86&sort=recommend&page_limit=21&page_start=0"
+
+#define GaoPoint_path @"http://movie.douban.com/j/search_subjects"
+
+//无厘头
+#define WULITOU_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E6%97%A0%E5%8E%98%E5%A4%B4&sort=recommend&page_limit=21&page_start=0"
+
+//华语
+#define HUAYU_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E5%8D%8E%E8%AF%AD&sort=recommend&page_limit=21&page_start=0"
+
+//欧美
+#define OUMEI_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E6%AC%A7%E7%BE%8E&sort=recommend&page_limit=21&page_start=0"
+
+//日韩
+#define RIHAN_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E6%97%A5%E9%9F%A9&sort=recommend&page_limit=21&page_start=0"
+
+//科幻
+#define SCIENCE_PATH @"http://movie.douban.com/j/search_subjects?type=movie&tag=%E7%A7%91%E5%B9%BB&sort=recommend&page_limit=21&page_start=0"
+
+
+
+
+
+
+
+
+#endif /* NetInterFace_h */

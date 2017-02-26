@@ -1,0 +1,23 @@
+//
+//  Hong.h
+//  100Movies_2.0
+//
+//  Created by qianfeng on 16/1/8.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+#ifndef Hong_h
+#define Hong_h
+
+/** 颜色 */
+#define RGB(_r,_g,_b,_a) [UIColor colorWithRed:_r/255.f green:_g/255.f blue:_b/255.f alpha:_a]
+
+/** 屏幕的宽高 */
+#define SCREEN_WIDTH [UIScreen mainScreen].bounds.size.width
+#define SCREEN_HEIGHT [UIScreen mainScreen].bounds.size.height
+
+/** 占位照片 */
+#define ZHANWEITU [UIImage imageNamed:@"zhanweitu"]
+
+
+#endif /* Hong_h */

@@ -1,0 +1,306 @@
+//
+//  WDF_Movie_message_ViewController.m
+//  100Movies_2.0
+//  电影详情的展示
+//  Created by qianfeng on 16/1/8.
+//  Copyright © 2016年 WDF. All rights reserved.
+//  王长勇
+
+#import "WDF_Movie_message_ViewController.h"
+/** 电影演员详情自定义Cell */
+#import "WDF_Movie_Message_TableViewCell.h"
+/** 电影详情Model */
+#import "WDF_Movie_Message_Model.h"
+/** 电影详情头视图展示 */
+#import "WDF_WDF_Movie_Message_HerderView.h"
+#import "AFNetworking.h"
+/** 电影详情自定义cell */
+#import "WDF_Movie_Message_For_Summary_TableViewCell.h"
+/** 电影评论自定义cell */
+#import "WDF_Movie_Message_For_Popular_commentsTableViewCell.h"
+/** 存储本地数据库*/
+#import "WDF_MovieInfo_DataManager.h"
+
+#import "WDF_User_Message_ViewController.h"
+#import "WDF_Casts_Message_ViewController.h"
+#import "WDF_Comments_Message_Model.h"
+#import "WDF_MovieInfo_DataManager.h"
+#import "MJRefresh.h"
+#import "MBProgressHUD.h"
+
+#define SUMMARYCELL @"summarycell"
+#define ACATARSCELL @"avatarscell"
+#define COMMENTSCELL @"commentscell"
+
+
+@interface WDF_Movie_message_ViewController ()<UITableViewDataSource,UITableViewDelegate>
+
+@property (nonatomic, strong) WDF_WDF_Movie_Message_HerderView *headerView;
+
+@property (nonatomic, strong) UITableView *tableView;
+
+@property (nonatomic, strong) NSMutableArray *dataSource;
+
+@property (nonatomic, strong) NSMutableArray *dataSourceComments;
+
+@end
+
+@implementation WDF_Movie_message_ViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    [self.view addSubview:self.tableView];
+    self.title=@"详情";
+    [self loadData];
+    
+    
+}
+/** 数据解析 */
+- (void)loadData{
+    [self showHUD:@"数据加载中" isDim:YES];
+    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
+    NSString *aa = [NSString stringWithFormat:MOVIE_PATH,self.ID];
+    NSString *string = [NSString stringWithFormat:@"%@%@%@",DOUBAN_BASE_PATH,aa,DOUBAN_APIKEY_BLACK_PRIVATE];
+    
+    [manager GET:string parameters:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        
+        [self creatModelAndSaveToDataSourceWith:responseObject];
+        if (self.tag==0) {
+            if ([[WDF_MovieInfo_DataManager sharedManager] selectePointID:self.ID]==NO) {
+                self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemBookmarks target:self action:@selector(savaAction)];
+            }else{
+                self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(savaAction2)];
+            }
+        }
+        
+        
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        NSLog(@"解析错误");
+    }];
+    
+    NSString *bb = [NSString stringWithFormat:MOVIE_COMMENTS_PATH,self.ID];
+    NSString *cc = [NSString stringWithFormat:DOUBAN_APIKEY,(int)self.dataSourceComments.count,10];
+    NSString *stringUrl = [NSString stringWithFormat:@"%@%@%@",DOUBAN_BASE_PATH,bb,cc];
+    [manager GET:stringUrl parameters:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        [self resolveDataWith:responseObject];
+        [self hideHUD];
+        [self loadDone];
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        NSLog(@"------------------->>>数据解析失败");
+        [self showHUDComplete:@"数据解析失败"];
+        [self loadDone];
+    }];
+    [self.tableView reloadData];
+    
+}
+
+- (void) loadDone{
+    [self.tableView.footer endRefreshing];
+    
+    [self.tableView reloadData];
+}
+- (void) resolveDataWith:(NSDictionary *)responseObject{
+    
+    NSArray *allData = responseObject[@"comments"];
+    for (NSDictionary *dict in allData) {
+        WDF_Comments_Message_Model *model = [[WDF_Comments_Message_Model alloc] initWithDictionary:dict error:nil];
+        [self.dataSourceComments addObject:model];
+    }
+    
+}
+-(void)savaAction2{
+    
+    UIAlertController *alter=[UIAlertController alertControllerWithTitle:@"取消收藏" message:nil preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *action=[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
+        
+    }];
+    UIAlertAction *done=[UIAlertAction actionWithTitle:@"确认" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemBookmarks target:self action:@selector(savaAction)];
+        
+        WDF_Movie_Message_Model *model=[[WDF_Movie_Message_Model alloc] init];
+        model=self.dataSource.firstObject;
+        [[WDF_MovieInfo_DataManager sharedManager] deleteRecord:model];
+        
+    }];
+    [alter addAction:done];
+    [alter addAction:action];
+    
+    [self presentViewController:alter animated:YES completion:nil];
+    
+}
+// 收藏事件
+- (void)savaAction{
+
+    
+    UIAlertController *alter=[UIAlertController alertControllerWithTitle:@"收藏" message:nil preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *action=[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction *action) {
+        
+    }];
+    UIAlertAction *done=[UIAlertAction actionWithTitle:@"确认" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemTrash target:self action:@selector(savaAction2)];
+        
+        WDF_Movie_Message_Model *model=[[WDF_Movie_Message_Model alloc] init];
+        model=self.dataSource.firstObject;
+        [[WDF_MovieInfo_DataManager sharedManager] addRecord:model];
+        
+    }];
+    [alter addAction:done];
+    [alter addAction:action];
+    
+    [self presentViewController:alter animated:YES completion:nil];
+    
+    
+}
+
+/** 创建模型并且存到dataSource */
+- (void)creatModelAndSaveToDataSourceWith:(NSDictionary *)responseObject{
+    __autoreleasing NSError *err = nil;
+    WDF_Movie_Message_Model *model = [[WDF_Movie_Message_Model alloc] initWithDictionary:responseObject error:&err];
+    [self.dataSource addObject:model];
+    
+    self.headerView.model = self.dataSource.firstObject;
+    [self.tableView reloadData];
+}
+
+#pragma mark =================tableView协议方法 =====================
+- (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    WDF_Movie_Message_Model *model =  self.dataSource.firstObject;
+    return self.dataSourceComments.count+1+model.casts.count;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    
+    
+    WDF_Movie_Message_Model *messageModel = self.dataSource.firstObject;
+    
+    /** 电影简介自定义cell实现 */
+    if (indexPath.row == 0) {
+        WDF_Movie_Message_For_Summary_TableViewCell *cell_1 = [tableView dequeueReusableCellWithIdentifier:SUMMARYCELL];
+        
+        
+        cell_1.model = messageModel;
+        return cell_1;
+    }else if (indexPath.row<=messageModel.casts.count){
+        
+        WDF_Movie_Message_TableViewCell *cell_2 = [tableView dequeueReusableCellWithIdentifier:ACATARSCELL];
+        
+        
+        cell_2.row = indexPath.row - 1;
+        cell_2.model = messageModel;
+        
+        return cell_2;
+    }else{
+        WDF_Movie_Message_For_Popular_commentsTableViewCell *cell_3 = [tableView dequeueReusableCellWithIdentifier:COMMENTSCELL];
+        
+        cell_3.model = self.dataSourceComments[indexPath.row - messageModel.casts.count - 1];
+        
+        return cell_3;
+    }
+    
+    return nil;
+}
+/** 每行返回的高度 */
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath{
+    if (indexPath.row) {
+        return 140;
+    }
+    return 180;
+}
+
+
+- (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+    
+    if (indexPath.row) {
+        WDF_Movie_Message_Model *model = self.dataSource.firstObject;
+        if (indexPath.row <= model.casts.count) {
+            WDF_Casts_Message_ViewController *casts = [[WDF_Casts_Message_ViewController alloc] init];
+            NSDictionary *dict = model.casts[indexPath.row-1];
+            casts.id = dict[@"id"];
+            
+            [self.navigationController pushViewController:casts animated:YES];
+            
+        }else{
+        WDF_User_Message_ViewController *messageView = [[WDF_User_Message_ViewController alloc] init];
+            messageView.model = self.dataSourceComments[indexPath.row - model.casts.count-1];
+            [self.navigationController pushViewController:messageView animated:YES];
+        }
+    }
+}
+
+// 上拉加载
+- (void) addRefreshControl{
+    MJRefreshAutoFooter *footerAuto = [MJRefreshAutoFooter footerWithRefreshingBlock:^{
+        [self loadData];
+        
+    }];
+    self.tableView.footer = footerAuto;
+}
+
+#pragma mark ====================== 懒加载 ==========================
+// 头视图懒加载
+- (WDF_WDF_Movie_Message_HerderView *)headerView{
+//    NSLog(@"%@",_headerView);
+    if (_headerView == nil) {
+        _headerView = [[WDF_WDF_Movie_Message_HerderView alloc] init];
+        _headerView.backgroundColor = RGB(0, 0, 0, 0.6);
+        [_headerView setFrame:CGRectMake(0, 0, 0, SCREEN_WIDTH*0.66)];
+        
+    }
+    return _headerView;
+}
+// tableView懒加载
+- (UITableView *)tableView{
+    if (_tableView == nil) {
+        _tableView = [[UITableView alloc]initWithFrame:CGRectMake(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT-40) style:UITableViewStylePlain];
+        [_tableView registerClass:[WDF_Movie_Message_For_Summary_TableViewCell class] forCellReuseIdentifier:SUMMARYCELL];
+        [_tableView registerClass:[WDF_Movie_Message_TableViewCell class] forCellReuseIdentifier:ACATARSCELL];
+        [_tableView registerClass:[WDF_Movie_Message_For_Popular_commentsTableViewCell class] forCellReuseIdentifier:COMMENTSCELL];
+        _tableView.dataSource = self;
+        _tableView .delegate = self;
+        _tableView.tableHeaderView = self.headerView;
+        
+        [self addRefreshControl];
+    }
+    return _tableView;
+}
+
+-(void)showHUD:(NSString *)title isDim:(BOOL)isDim
+{
+    self.hud = [MBProgressHUD showHUDAddedTo:self.view animated:YES];
+    self.hud.dimBackground = isDim;
+    self.hud.labelText = title;
+}
+
+-(void)showHUDComplete:(NSString *)title
+{
+    self.hud.customView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"37x-Checkmark.png"]];
+    self.hud.mode = MBProgressHUDModeCustomView;
+    self.hud.labelText = title;
+    [self hideHUD];
+}
+
+-(void)hideHUD
+{
+    [self.hud hide:YES afterDelay:0.3];
+}
+
+
+// dataSource懒加载
+- (NSMutableArray *)dataSource{
+    if (_dataSource == nil) {
+        _dataSource = [[NSMutableArray alloc]init];
+    }
+    return _dataSource;
+}
+- (NSMutableArray *)dataSourceComments{
+    if (_dataSourceComments == nil) {
+        _dataSourceComments = [[NSMutableArray alloc] init];
+    }
+    return _dataSourceComments;
+    
+}
+
+@end

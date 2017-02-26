@@ -1,0 +1,16 @@
+//
+//  WDF_PhotoCollectionViewCell.h
+//  100Movies_2.0
+//
+//  Created by qianfeng on 16/1/9.
+//  Copyright © 2016年 WDF. All rights reserved.
+//
+
+#import "WDF_RootView.h"
+
+@class WDF_PhotoModel;
+@interface WDF_PhotoCollectionViewCell : UICollectionViewCell
+
+@property(nonatomic,strong) WDF_PhotoModel *model;
+@property(nonatomic,strong) UIImageView *image;
+@end
